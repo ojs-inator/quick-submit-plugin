@@ -17,6 +17,9 @@ msgstr "پلاگین ساب میت سریع"
 msgid "plugins.importexport.quickSubmit.description"
 msgstr "پلاگین ساب میشن تک مرحله ای"
 
+msgid "plugins.importexport.quickSubmit.descriptionLong"
+msgstr "این افزونه به شما امکان می‌دهد ارسال‌های کامل را به‌سرعت به مرحله تولید اضافه کنید یا مستقیماً به یک شماره اضافه کنید."
+
 msgid "plugins.importexport.quickSubmit.success"
 msgstr "مقاله اضافه شد."
 
@@ -25,3 +28,21 @@ msgstr "ایجاد مقاله با موفقیت صورت کرفت."
 
 msgid "plugins.importexport.quickSubmit.successReturn"
 msgstr "بازگشت به پلاگین ساب میت سریع."
+
+msgid "plugins.importexport.quickSubmit.cancel"
+msgstr "ارسال لغو شد"
+
+msgid "plugins.importexport.quickSubmit.cancelDescription"
+msgstr "ارسال لغو شد."
+
+msgid "plugins.importexport.quickSubmit.published"
+msgstr "منتشرشده"
+
+msgid "plugins.importexport.quickSubmit.unpublished"
+msgstr "منتشرنشده"
+
+msgid "plugins.importexport.quickSubmit.goToSubmission"
+msgstr "رفتن به ارسال"
+
+msgid "plugins.importexport.quickSubmit.selectIssue"
+msgstr "باید یک شماره انتخاب شود"
