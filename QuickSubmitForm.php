@@ -28,6 +28,7 @@ use PKP\context\Context;
 use PKP\core\Core;
 use PKP\core\PKPRequest;
 use PKP\core\PKPString;
+use PKP\db\DAORegistry;
 use PKP\facades\Locale;
 use PKP\form\Form;
 use PKP\form\validation\FormValidatorUrl;
@@ -40,7 +41,6 @@ use PKP\linkAction\request\AjaxModal;
 use PKP\security\Role;
 use PKP\submission\PKPSubmission;
 use PKP\submissionFile\SubmissionFile;
-use PKP\userGroup\UserGroup;
 
 class QuickSubmitForm extends Form
 {
@@ -337,16 +337,16 @@ class QuickSubmitForm extends Form
             // Add the user manager group (first that is found) to the stage_assignment for that submission
             $user = $this->_request->getUser();
 
-            $managerUserGroups = UserGroup::query()
-                ->withUserIds([$user->getId()])
-                ->withContextIds([$this->_context->getId()])
-                ->withRoleIds([Role::ROLE_ID_MANAGER])
-                ->cursor();
+            $managerUserGroups = Repo::userGroup()
+                ->getCollector()
+                ->filterByUserIds([$user->getId()])
+                ->filterByContextIds([$this->_context->getId()])
+                ->filterByRoleIds([Role::ROLE_ID_MANAGER])
+                ->getMany();
 
-            // $userGroupId is being used for Repo::stageAssignment()->build(...)
-            // This build function needs the userGroupId
-            // So here the first function should fail if no manager user group is found.
-            $userGroupId = $managerUserGroups->firstOrFail()->id;
+            // The stage-assignment API needs the manager user group ID.
+            // Fail early if no manager user group is found.
+            $userGroupId = $managerUserGroups->firstOrFail()->getId();
 
             // Pre-fill the copyright information fields from setup (#7236)
             $this->_data['licenseUrl'] = $this->_context->getData('licenseUrl');
@@ -364,12 +364,19 @@ class QuickSubmitForm extends Form
             $this->_data['copyrightYear'] = date('Y');
 
             // Assign the user author to the stage
-            Repo::stageAssignment()
-                ->build(
+            if (method_exists(Repo::class, 'stageAssignment')) {
+                Repo::stageAssignment()->build(
                     $this->_submission->getId(),
                     $userGroupId,
                     $user->getId()
                 );
+            } else {
+                DAORegistry::getDAO('StageAssignmentDAO')->build(
+                    $this->_submission->getId(),
+                    $userGroupId,
+                    $user->getId()
+                );
+            }
         }
     }
 
