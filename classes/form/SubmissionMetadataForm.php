@@ -27,6 +27,7 @@ use APP\plugins\importexport\quickSubmit\QuickSubmitForm;
 use PKP\context\Context;
 use PKP\core\Core;
 use PKP\controlledVocab\ControlledVocab;
+use PKP\db\DAORegistry;
 use PKP\security\Validation;
 
 class SubmissionMetadataForm
@@ -267,30 +268,38 @@ class SubmissionMetadataForm
         }
 
         $currentPublication = $submission->getCurrentPublication();
-        Repo::controlledVocab()->insertBySymbolic(
-            ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_KEYWORD,
-            $keywords,
-            Application::ASSOC_TYPE_PUBLICATION,
-            $currentPublication->getId()
-        );
-        Repo::controlledVocab()->insertBySymbolic(
-            ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_AGENCY,
-            $agencies,
-            Application::ASSOC_TYPE_PUBLICATION,
-            $currentPublication->getId()
-        );
-        Repo::controlledVocab()->insertBySymbolic(
-            ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE,
-            $disciplines,
-            Application::ASSOC_TYPE_PUBLICATION,
-            $currentPublication->getId()
-        );
-        Repo::controlledVocab()->insertBySymbolic(
-            ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_SUBJECT,
-            $subjects,
-            Application::ASSOC_TYPE_PUBLICATION,
-            $currentPublication->getId()
-        );
+        if (method_exists(Repo::class, 'controlledVocab')) {
+            Repo::controlledVocab()->insertBySymbolic(
+                ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_KEYWORD,
+                $keywords,
+                Application::ASSOC_TYPE_PUBLICATION,
+                $currentPublication->getId()
+            );
+            Repo::controlledVocab()->insertBySymbolic(
+                ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_AGENCY,
+                $agencies,
+                Application::ASSOC_TYPE_PUBLICATION,
+                $currentPublication->getId()
+            );
+            Repo::controlledVocab()->insertBySymbolic(
+                ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_DISCIPLINE,
+                $disciplines,
+                Application::ASSOC_TYPE_PUBLICATION,
+                $currentPublication->getId()
+            );
+            Repo::controlledVocab()->insertBySymbolic(
+                ControlledVocab::CONTROLLED_VOCAB_SUBMISSION_SUBJECT,
+                $subjects,
+                Application::ASSOC_TYPE_PUBLICATION,
+                $currentPublication->getId()
+            );
+        } else {
+            // OJS 3.4 stores publication vocabularies through the legacy DAOs.
+            DAORegistry::getDAO('SubmissionKeywordDAO')->insertKeywords($keywords, $currentPublication->getId());
+            DAORegistry::getDAO('SubmissionAgencyDAO')->insertAgencies($agencies, $currentPublication->getId());
+            DAORegistry::getDAO('SubmissionDisciplineDAO')->insertDisciplines($disciplines, $currentPublication->getId());
+            DAORegistry::getDAO('SubmissionSubjectDAO')->insertSubjects($subjects, $currentPublication->getId());
+        }
 
         // Only log modifications on completed submissions
         if (!$submission->getData('submissionProgress')) {
