@@ -324,7 +324,12 @@ class QuickSubmitForm extends Form
             $publication = new Publication();
             $publication->setData('locale', $this->getDefaultFormLocale());
             $publication->setData('sectionId', $sectionId);
-            $publication->setData('status', Publication::STATUS_QUEUED);
+            $publication->setData(
+                'status',
+                defined(Publication::class . '::STATUS_QUEUED')
+                    ? Publication::STATUS_QUEUED
+                    : PKPSubmission::STATUS_QUEUED
+            );
             $publication->setData('version', 1);
 
             Repo::submission()->add($this->_submission, $publication, $this->_context);
