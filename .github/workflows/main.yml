@@ -7,7 +7,7 @@ jobs:
     # Use the KMANWeb disposable Docker runner pool instead.
     # The org's chatgpt group must allow public repositories because this
     # repository is public.
-    # Keep this integration pass on the upgraded k4 runtime profile.
+    # Pilot the PostgreSQL-compatible KMANWeb runtime on k4.
     runs-on:
       group: chatgpt
       labels: [self-hosted, kmanweb, docker, k4]
