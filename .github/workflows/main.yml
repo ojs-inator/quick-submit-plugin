@@ -1,30 +1,68 @@
 on: [push, pull_request]
 name: quickSubmit
+
 jobs:
   quickSubmit:
-    runs-on: ubuntu-latest
+    # GitHub-hosted runner quota is exhausted for this organization.
+    # Use the KMANWeb disposable Docker runner pool instead.
+    # The org's chatgpt group must allow public repositories because this
+    # repository is public.
+    # Pilot the KMANWeb runtime with PKP HTTP readiness prerequisites on k4.
+    runs-on:
+      group: chatgpt
+      labels: [self-hosted, kmanweb, docker, k4]
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Current OJS development target
           - application: ojs
+            ojs_branch: main
             php-version: 8.3
             database: mysql
+            node_version: 20
           - application: ojs
+            ojs_branch: main
             php-version: 8.2
             database: mysql
+            node_version: 20
           - application: ojs
+            ojs_branch: main
             php-version: 8.3
             database: pgsql
+            node_version: 20
           - application: ojs
+            ojs_branch: main
             php-version: 8.2
             database: pgsql
-    name: quickSubmit
+            node_version: 20
+
+          # KMANPUB production compatibility target. Keep this on main so
+          # OJS 3.4 compatibility patches cannot merge without being tested
+          # against the version they are intended to support.
+          - application: ojs
+            ojs_branch: stable-3_4_0
+            php-version: 8.1
+            database: mysql
+            node_version: 16
+          - application: ojs
+            ojs_branch: stable-3_4_0
+            php-version: 8.2
+            database: mysql
+            node_version: 16
+          - application: ojs
+            ojs_branch: stable-3_4_0
+            php-version: 8.2
+            database: pgsql
+            node_version: 16
+
+    name: ${{ matrix.ojs_branch }} / PHP ${{ matrix['php-version'] }} / ${{ matrix.database }}
     steps:
       - uses: pkp/pkp-github-actions@v1
         with:
-         node_version: 20
-         branch: main
-         repository: pkp
-         plugin: true
-         dataset_inject: true
+          node_version: ${{ matrix.node_version }}
+          branch: ${{ matrix.ojs_branch }}
+          repository: pkp
+          plugin: true
+          dataset_inject: true

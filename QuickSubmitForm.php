@@ -487,15 +487,24 @@ class QuickSubmitForm extends Form
                     : (int) $this->getData('issueId')
             );
 
-            if ((int) $this->getData('issueId') == IssueSelection::NO_ISSUE->value) {
-                $issue = Repo::issue()->get((int)$this->getData('issueId'), $this->_context->getId());
-                if (!$issue->getData('published')) {
+            // For future issues, OJS 3.5 can distinguish between publishing
+            // immediately and scheduling for the issue. Never resolve the NO_ISSUE
+            // sentinel as a real issue: that returns null and caused a fatal error.
+            $selectedIssueId = (int) $this->getData('issueId');
+            if ($selectedIssueId !== IssueSelection::NO_ISSUE->value) {
+                $issue = Repo::issue()->get($selectedIssueId, $this->_context->getId());
+                if (
+                    $issue
+                    && !$issue->getData('published')
+                    && defined(Publication::class . '::STATUS_READY_TO_PUBLISH')
+                    && defined(Publication::class . '::STATUS_READY_TO_SCHEDULE')
+                ) {
                     $publication->setData(
                         'status',
                         $this->getData('published')
                             ? Publication::STATUS_READY_TO_PUBLISH
                             : Publication::STATUS_READY_TO_SCHEDULE
-                    );        
+                    );
                 }
             }
 
@@ -511,8 +520,9 @@ class QuickSubmitForm extends Form
             if (count($otherSubmissionsInSection)) {
                 $maxSequence = 0;
                 foreach ($otherSubmissionsInSection as $submission) {
-                    if ($publication->getData('seq')) {
-                        $maxSequence = max($maxSequence, $publication->getData('seq'));
+                    $otherPublication = $submission->getCurrentPublication();
+                    if ($otherPublication && $otherPublication->getData('seq')) {
+                        $maxSequence = max($maxSequence, $otherPublication->getData('seq'));
                     }
                 }
                 $publication->setData('seq', $maxSequence + 1);
