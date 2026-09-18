@@ -10,40 +10,47 @@ jobs:
       matrix:
         include:
           # Current OJS development target
-          - ojs_branch: main
-            php_version: 8.3
+          - application: ojs
+            ojs_branch: main
+            php-version: 8.3
             database: mysql
             node_version: 20
-          - ojs_branch: main
-            php_version: 8.2
+          - application: ojs
+            ojs_branch: main
+            php-version: 8.2
             database: mysql
             node_version: 20
-          - ojs_branch: main
-            php_version: 8.3
+          - application: ojs
+            ojs_branch: main
+            php-version: 8.3
             database: pgsql
             node_version: 20
-          - ojs_branch: main
-            php_version: 8.2
+          - application: ojs
+            ojs_branch: main
+            php-version: 8.2
             database: pgsql
             node_version: 20
 
           # KMANPUB production compatibility target. Keep this on main so
           # OJS 3.4 compatibility patches cannot merge without being tested
           # against the version they are intended to support.
-          - ojs_branch: stable-3_4_0
-            php_version: 8.1
+          - application: ojs
+            ojs_branch: stable-3_4_0
+            php-version: 8.1
             database: mysql
             node_version: 16
-          - ojs_branch: stable-3_4_0
-            php_version: 8.2
+          - application: ojs
+            ojs_branch: stable-3_4_0
+            php-version: 8.2
             database: mysql
             node_version: 16
-          - ojs_branch: stable-3_4_0
-            php_version: 8.2
+          - application: ojs
+            ojs_branch: stable-3_4_0
+            php-version: 8.2
             database: pgsql
             node_version: 16
 
-    name: ${{ matrix.ojs_branch }} / PHP ${{ matrix.php_version }} / ${{ matrix.database }}
+    name: ${{ matrix.ojs_branch }} / PHP ${{ matrix['php-version'] }} / ${{ matrix.database }}
     steps:
       - uses: pkp/pkp-github-actions@v1
         with:
