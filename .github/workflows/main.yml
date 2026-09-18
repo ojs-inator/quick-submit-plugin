@@ -3,7 +3,11 @@ name: quickSubmit
 
 jobs:
   quickSubmit:
-    runs-on: ubuntu-latest
+    # GitHub-hosted runner quota is exhausted for this organization.
+    # Use the KMANWeb disposable Docker runner pool instead.
+    runs-on:
+      group: chatgpt
+      labels: [self-hosted, kmanweb, docker]
     timeout-minutes: 30
     strategy:
       fail-fast: false
