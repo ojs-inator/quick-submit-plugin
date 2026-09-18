@@ -1,30 +1,54 @@
 on: [push, pull_request]
 name: quickSubmit
+
 jobs:
   quickSubmit:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         include:
-          - application: ojs
-            php-version: 8.3
+          # Current OJS development target
+          - ojs_branch: main
+            php_version: 8.3
             database: mysql
-          - application: ojs
-            php-version: 8.2
+            node_version: 20
+          - ojs_branch: main
+            php_version: 8.2
             database: mysql
-          - application: ojs
-            php-version: 8.3
+            node_version: 20
+          - ojs_branch: main
+            php_version: 8.3
             database: pgsql
-          - application: ojs
-            php-version: 8.2
+            node_version: 20
+          - ojs_branch: main
+            php_version: 8.2
             database: pgsql
-    name: quickSubmit
+            node_version: 20
+
+          # KMANPUB production compatibility target. Keep this on main so
+          # OJS 3.4 compatibility patches cannot merge without being tested
+          # against the version they are intended to support.
+          - ojs_branch: stable-3_4_0
+            php_version: 8.1
+            database: mysql
+            node_version: 16
+          - ojs_branch: stable-3_4_0
+            php_version: 8.2
+            database: mysql
+            node_version: 16
+          - ojs_branch: stable-3_4_0
+            php_version: 8.2
+            database: pgsql
+            node_version: 16
+
+    name: ${{ matrix.ojs_branch }} / PHP ${{ matrix.php_version }} / ${{ matrix.database }}
     steps:
       - uses: pkp/pkp-github-actions@v1
         with:
-         node_version: 20
-         branch: main
-         repository: pkp
-         plugin: true
-         dataset_inject: true
+          node_version: ${{ matrix.node_version }}
+          branch: ${{ matrix.ojs_branch }}
+          repository: pkp
+          plugin: true
+          dataset_inject: true
