@@ -5,6 +5,8 @@ jobs:
   quickSubmit:
     # GitHub-hosted runner quota is exhausted for this organization.
     # Use the KMANWeb disposable Docker runner pool instead.
+    # The org's chatgpt group must allow public repositories because this
+    # repository is public.
     runs-on:
       group: chatgpt
       labels: [self-hosted, kmanweb, docker]
