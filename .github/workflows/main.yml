@@ -9,7 +9,7 @@ jobs:
     # repository is public.
     runs-on:
       group: chatgpt
-      labels: [self-hosted, kmanweb, docker]
+      labels: [self-hosted, kmanweb, docker, k4]
     timeout-minutes: 30
     strategy:
       fail-fast: false
