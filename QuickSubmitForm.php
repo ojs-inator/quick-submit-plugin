@@ -23,6 +23,7 @@ use APP\publication\Publication;
 use APP\submission\Submission;
 use APP\template\TemplateManager;
 use Exception;
+use PKP\components\listPanels\ContributorsListPanel;
 use PKP\config\Config;
 use PKP\context\Context;
 use PKP\core\Core;
@@ -41,6 +42,7 @@ use PKP\linkAction\request\AjaxModal;
 use PKP\security\Role;
 use PKP\submission\PKPSubmission;
 use PKP\submissionFile\SubmissionFile;
+use PKP\userGroup\UserGroup;
 
 class QuickSubmitForm extends Form
 {
@@ -246,7 +248,55 @@ class QuickSubmitForm extends Form
             'primaryLocale' => $this->_submission->getData('locale'),
         ]);
 
+        // OJS 3.5+ replaced the legacy author grid with a Vue contributors panel.
+        // Keep the legacy grid on OJS 3.4, where Repo::userGroup()->getCollector() still exists.
+        $useContributorsListPanel = !method_exists(Repo::userGroup(), 'getCollector')
+            && class_exists(ContributorsListPanel::class);
+        $templateMgr->assign('useContributorsListPanel', $useContributorsListPanel);
+        if ($useContributorsListPanel) {
+            $this->setContributorsListPanelState($templateMgr);
+        }
+
         parent::display($request, $template);
+    }
+
+    /**
+     * Set the current-OJS ContributorsListPanel state.
+     */
+    protected function setContributorsListPanelState(TemplateManager $templateMgr): void
+    {
+        $submission = $this->_submission;
+        $context = $this->_context;
+        $publication = $submission->getCurrentPublication();
+
+        $locales = collect($context->getSupportedSubmissionMetadataLocaleNames() + $submission->getPublicationLanguageNames())
+            ->map(fn (string $name, string $locale) => ['key' => $locale, 'label' => $name])
+            ->sortBy('key')
+            ->values()
+            ->toArray();
+
+        $authorItems = [];
+        foreach ($publication->getData('authors') as $contributor) {
+            $authorItems[] = Repo::author()->getSchemaMap($submission)->map($contributor);
+        }
+
+        $contributorsListPanel = new ContributorsListPanel(
+            'quickSubmitContributors',
+            __('publication.contributors'),
+            $submission,
+            $context,
+            $locales,
+            $authorItems,
+            true
+        );
+
+        $genreDao = DAORegistry::getDAO('GenreDAO');
+        $contextGenres = $genreDao->getEnabledByContextId($context->getId())->toArray();
+
+        $templateMgr->setState([
+            'quickSubmitContributorsListPanel' => $contributorsListPanel->getConfig(),
+            'quickSubmitPublication' => Repo::publication()->getSchemaMap($submission, $contextGenres)->map($publication),
+        ]);
     }
 
     /**
@@ -342,16 +392,27 @@ class QuickSubmitForm extends Form
             // Add the user manager group (first that is found) to the stage_assignment for that submission
             $user = $this->_request->getUser();
 
-            $managerUserGroups = Repo::userGroup()
-                ->getCollector()
-                ->filterByUserIds([$user->getId()])
-                ->filterByContextIds([$this->_context->getId()])
-                ->filterByRoleIds([Role::ROLE_ID_MANAGER])
-                ->getMany();
+            if (method_exists(Repo::userGroup(), 'getCollector')) {
+                $managerUserGroups = Repo::userGroup()
+                    ->getCollector()
+                    ->filterByUserIds([$user->getId()])
+                    ->filterByContextIds([$this->_context->getId()])
+                    ->filterByRoleIds([Role::ROLE_ID_MANAGER])
+                    ->getMany();
+            } else {
+                $managerUserGroups = UserGroup::query()
+                    ->withUserIds([$user->getId()])
+                    ->withContextIds([$this->_context->getId()])
+                    ->withRoleIds([Role::ROLE_ID_MANAGER])
+                    ->cursor();
+            }
 
             // The stage-assignment API needs the manager user group ID.
             // Fail early if no manager user group is found.
-            $userGroupId = $managerUserGroups->firstOrFail()->getId();
+            $managerUserGroup = $managerUserGroups->firstOrFail();
+            $userGroupId = method_exists($managerUserGroup, 'getId')
+                ? $managerUserGroup->getId()
+                : $managerUserGroup->id;
 
             // Pre-fill the copyright information fields from setup (#7236)
             $this->_data['licenseUrl'] = $this->_context->getData('licenseUrl');
@@ -487,15 +548,24 @@ class QuickSubmitForm extends Form
                     : (int) $this->getData('issueId')
             );
 
-            if ((int) $this->getData('issueId') == IssueSelection::NO_ISSUE->value) {
-                $issue = Repo::issue()->get((int)$this->getData('issueId'), $this->_context->getId());
-                if (!$issue->getData('published')) {
+            // For future issues, OJS 3.5 can distinguish between publishing
+            // immediately and scheduling for the issue. Never resolve the NO_ISSUE
+            // sentinel as a real issue: that returns null and caused a fatal error.
+            $selectedIssueId = (int) $this->getData('issueId');
+            if ($selectedIssueId !== IssueSelection::NO_ISSUE->value) {
+                $issue = Repo::issue()->get($selectedIssueId, $this->_context->getId());
+                if (
+                    $issue
+                    && !$issue->getData('published')
+                    && defined(Publication::class . '::STATUS_READY_TO_PUBLISH')
+                    && defined(Publication::class . '::STATUS_READY_TO_SCHEDULE')
+                ) {
                     $publication->setData(
                         'status',
                         $this->getData('published')
                             ? Publication::STATUS_READY_TO_PUBLISH
                             : Publication::STATUS_READY_TO_SCHEDULE
-                    );        
+                    );
                 }
             }
 
@@ -511,8 +581,9 @@ class QuickSubmitForm extends Form
             if (count($otherSubmissionsInSection)) {
                 $maxSequence = 0;
                 foreach ($otherSubmissionsInSection as $submission) {
-                    if ($publication->getData('seq')) {
-                        $maxSequence = max($maxSequence, $publication->getData('seq'));
+                    $otherPublication = $submission->getCurrentPublication();
+                    if ($otherPublication && $otherPublication->getData('seq')) {
+                        $maxSequence = max($maxSequence, $otherPublication->getData('seq'));
                     }
                 }
                 $publication->setData('seq', $maxSequence + 1);
@@ -521,11 +592,14 @@ class QuickSubmitForm extends Form
             Repo::publication()->publish($publication);
         }
 
-        // Index article.
-        $articleSearchIndex = Application::getSubmissionSearchIndex();
-        $articleSearchIndex->submissionMetadataChanged($this->_submission);
-        $articleSearchIndex->submissionFilesChanged($this->_submission);
-        $articleSearchIndex->submissionChangesFinished();
+        // OJS 3.4 still exposes the legacy synchronous search index API.
+        // Current OJS no longer has Application::getSubmissionSearchIndex().
+        if (method_exists(Application::class, 'getSubmissionSearchIndex')) {
+            $articleSearchIndex = Application::getSubmissionSearchIndex();
+            $articleSearchIndex->submissionMetadataChanged($this->_submission);
+            $articleSearchIndex->submissionFilesChanged($this->_submission);
+            $articleSearchIndex->submissionChangesFinished();
+        }
     }
 
     /**
