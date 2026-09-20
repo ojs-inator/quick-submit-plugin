@@ -78,7 +78,12 @@ describe('Quick Submit plugin tests', function() {
 		cy.waitJQuery(); // Wait for form resubmission hack on section change.
 		cy.wait(2000); // FIXME: Detached element delay
 
-		cy.get('input[name="submissionId"]').invoke('val').as('quickSubmitSubmissionId');
+		// Capture the draft ID as a static value. Cypress query aliases are re-evaluated
+		// when accessed; after save the form is replaced by the success page, so a
+		// query alias would resolve against a DOM where this hidden input no longer exists.
+		cy.get('input[name="submissionId"]')
+			.invoke('val')
+			.as('quickSubmitSubmissionId', {type: 'static'});
 		cy.get('input[id^="title-en-"]').type(expected.title, {delay: 0});
 		cy.get('textarea[id^="abstract-en-"]').then(node => {
 			cy.setTinyMceContent(node.attr('id'), expected.abstract);
@@ -152,7 +157,12 @@ describe('Quick Submit plugin tests', function() {
 		cy.waitJQuery(); // Wait for form resubmission hack on section change.
 		cy.wait(2000); // FIXME: Detached element delay
 
-		cy.get('input[name="submissionId"]').invoke('val').as('quickSubmitSubmissionId');
+		// Capture the draft ID as a static value. Cypress query aliases are re-evaluated
+		// when accessed; after save the form is replaced by the success page, so a
+		// query alias would resolve against a DOM where this hidden input no longer exists.
+		cy.get('input[name="submissionId"]')
+			.invoke('val')
+			.as('quickSubmitSubmissionId', {type: 'static'});
 		cy.get('input[id^="title-en-"]').type(expected.title, {delay: 0});
 		cy.get('textarea[id^="abstract-en-"]').then(node => {
 			cy.setTinyMceContent(node.attr('id'), expected.abstract);
