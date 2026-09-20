@@ -68,8 +68,20 @@
 
 			{fbvFormArea id="contributors"}
 				<!--  Contributors -->
-				{capture assign="authorGridUrl"}{url router=PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.users.author.AuthorGridHandler" op="fetchGrid" submissionId=$submissionId publicationId=$publicationId escape=false}{/capture}
-				{load_url_in_div id="authorsGridContainer" url=$authorGridUrl}
+				{if $useContributorsListPanel}
+					<div id="quickSubmitContributorsListPanel">
+						<contributors-list-panel
+							v-bind="quickSubmitContributorsListPanel"
+							:items="quickSubmitPublication.authors"
+							:publication="quickSubmitPublication"
+							@updated:contributors="quickSubmitPublication.authors = $event"
+							@updated:publication="quickSubmitPublication = $event"
+						></contributors-list-panel>
+					</div>
+				{else}
+					{capture assign="authorGridUrl"}{url router=PKP\core\PKPApplication::ROUTE_COMPONENT component="grid.users.author.AuthorGridHandler" op="fetchGrid" submissionId=$submissionId publicationId=$publicationId escape=false}{/capture}
+					{load_url_in_div id="authorsGridContainer" url=$authorGridUrl}
+				{/if}
 
 				{$additionalContributorsFields}
 			{/fbvFormArea}
