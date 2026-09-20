@@ -41,6 +41,7 @@ use PKP\linkAction\request\AjaxModal;
 use PKP\security\Role;
 use PKP\submission\PKPSubmission;
 use PKP\submissionFile\SubmissionFile;
+use PKP\userGroup\UserGroup;
 
 class QuickSubmitForm extends Form
 {
@@ -342,12 +343,20 @@ class QuickSubmitForm extends Form
             // Add the user manager group (first that is found) to the stage_assignment for that submission
             $user = $this->_request->getUser();
 
-            $managerUserGroups = Repo::userGroup()
-                ->getCollector()
-                ->filterByUserIds([$user->getId()])
-                ->filterByContextIds([$this->_context->getId()])
-                ->filterByRoleIds([Role::ROLE_ID_MANAGER])
-                ->getMany();
+            if (method_exists(Repo::userGroup(), 'getCollector')) {
+                $managerUserGroups = Repo::userGroup()
+                    ->getCollector()
+                    ->filterByUserIds([$user->getId()])
+                    ->filterByContextIds([$this->_context->getId()])
+                    ->filterByRoleIds([Role::ROLE_ID_MANAGER])
+                    ->getMany();
+            } else {
+                $managerUserGroups = UserGroup::query()
+                    ->withUserIds([$user->getId()])
+                    ->withContextIds([$this->_context->getId()])
+                    ->withRoleIds([Role::ROLE_ID_MANAGER])
+                    ->cursor();
+            }
 
             // The stage-assignment API needs the manager user group ID.
             // Fail early if no manager user group is found.
