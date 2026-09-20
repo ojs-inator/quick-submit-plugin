@@ -28,6 +28,37 @@ function saveAndAssertRequestSucceeded() {
 	});
 }
 
+
+function addContributor() {
+	const legacyAddAuthorSelector = 'a[id^="component-grid-users-author-authorgrid-addAuthor-button-"]';
+
+	cy.get('body').then($body => {
+		if ($body.find(legacyAddAuthorSelector).length) {
+			// OJS 3.4 contributor grid.
+			cy.get(legacyAddAuthorSelector).click();
+			cy.wait(1000); // Form init delay
+			cy.get('input[id^="givenName-en-"]').type('Quincy', {delay: 0});
+			cy.get('input[id^="familyName-en-"]').type('Submitter', {delay: 0});
+			cy.get('select[id="country"]').select('Canada');
+			cy.get('input[id^=email-]').type('qsubmitter@mailinator.com', {delay: 0});
+			cy.get('input[id^="affiliation-en-"]').type('Queens University', {delay: 0});
+			cy.get('label:contains("Author")').click();
+			cy.get('form[id="editAuthor"] button:contains("Save")').click();
+		} else {
+			// Current OJS contributor panel.
+			cy.get('button').contains('Add Contributor').click();
+			cy.get('.pkpFormField:contains("Given Name")').find('input[name*="-en"]').type('Quincy', {delay: 0});
+			cy.get('.pkpFormField:contains("Family Name")').find('input[name*="-en"]').type('Submitter', {delay: 0});
+			cy.get('.pkpFormField:contains("Country")').find('select').select('Canada');
+			cy.get('.pkpFormField:contains("Email")').find('input').type('qsubmitter@mailinator.com', {delay: 0});
+			cy.get(`input[name=contributorRoles][value="${Cypress.env('contributorRoleAuthor')}"]`).check();
+			cy.get('div[role=dialog]:contains("Add Contributor")').find('button').contains('Save').click();
+		}
+	});
+
+	cy.contains('Quincy Submitter');
+}
+
 function assertPublicationRoundTrip(submissionId, expected) {
 	cy.request({
 		url: `index.php/publicknowledge/api/v1/submissions/${submissionId}`,
@@ -90,16 +121,7 @@ describe('Quick Submit plugin tests', function() {
 		});
 
 		// Add an author. This is a separate AJAX write from the final metadata save.
-		cy.get('a[id^="component-grid-users-author-authorgrid-addAuthor-button-"]').click();
-		cy.wait(1000); // Form init delay
-		cy.get('input[id^="givenName-en-"]').type('Quincy', {delay: 0});
-		cy.get('input[id^="familyName-en-"]').type('Submitter', {delay: 0});
-		cy.get('select[id="country"]').select('Canada');
-		cy.get('input[id^=email-]').type('qsubmitter@mailinator.com', {delay: 0});
-		cy.get('input[id^="affiliation-en-"]').type('Queens University', {delay: 0});
-		cy.get('label:contains("Author")').click();
-		cy.get('form[id="editAuthor"] button:contains("Save")').click();
-		cy.get('div:contains("Author added.")');
+		addContributor();
 
 		// Schedule for publication
 		cy.get('input#articlePublished').click();
@@ -170,16 +192,7 @@ describe('Quick Submit plugin tests', function() {
 
 		// Add an author. The production incident showed that this write can survive
 		// even when the final publication-metadata save does not.
-		cy.get('a[id^="component-grid-users-author-authorgrid-addAuthor-button-"]').click();
-		cy.wait(1000); // Form init delay
-		cy.get('input[id^="givenName-en-"]').type('Quincy', {delay: 0});
-		cy.get('input[id^="familyName-en-"]').type('Submitter', {delay: 0});
-		cy.get('select[id="country"]').select('Canada');
-		cy.get('input[id^=email-]').type('qsubmitter@mailinator.com', {delay: 0});
-		cy.get('input[id^="affiliation-en-"]').type('Queens University', {delay: 0});
-		cy.get('label:contains("Author")').click();
-		cy.get('form[id="editAuthor"] button:contains("Save")').click();
-		cy.get('div:contains("Author added.")');
+		addContributor();
 
 		saveAndAssertRequestSucceeded();
 
