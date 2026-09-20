@@ -592,11 +592,14 @@ class QuickSubmitForm extends Form
             Repo::publication()->publish($publication);
         }
 
-        // Index article.
-        $articleSearchIndex = Application::getSubmissionSearchIndex();
-        $articleSearchIndex->submissionMetadataChanged($this->_submission);
-        $articleSearchIndex->submissionFilesChanged($this->_submission);
-        $articleSearchIndex->submissionChangesFinished();
+        // OJS 3.4 still exposes the legacy synchronous search index API.
+        // Current OJS no longer has Application::getSubmissionSearchIndex().
+        if (method_exists(Application::class, 'getSubmissionSearchIndex')) {
+            $articleSearchIndex = Application::getSubmissionSearchIndex();
+            $articleSearchIndex->submissionMetadataChanged($this->_submission);
+            $articleSearchIndex->submissionFilesChanged($this->_submission);
+            $articleSearchIndex->submissionChangesFinished();
+        }
     }
 
     /**
