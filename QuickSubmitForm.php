@@ -360,7 +360,10 @@ class QuickSubmitForm extends Form
 
             // The stage-assignment API needs the manager user group ID.
             // Fail early if no manager user group is found.
-            $userGroupId = $managerUserGroups->firstOrFail()->getId();
+            $managerUserGroup = $managerUserGroups->firstOrFail();
+            $userGroupId = method_exists($managerUserGroup, 'getId')
+                ? $managerUserGroup->getId()
+                : $managerUserGroup->id;
 
             // Pre-fill the copyright information fields from setup (#7236)
             $this->_data['licenseUrl'] = $this->_context->getData('licenseUrl');
