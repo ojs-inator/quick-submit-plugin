@@ -4,10 +4,10 @@ name: quickSubmit
 jobs:
   quickSubmit:
     # GitHub-hosted runner quota is exhausted for this organization.
-    # Keep this focused validation on the known KMANWeb k4 runner.
+    # Use any available KMANWeb disposable runner; the job installs its own Cypress libs.
     runs-on:
       group: chatgpt
-      labels: [self-hosted, kmanweb, docker, k4]
+      labels: [self-hosted, kmanweb, docker]
     timeout-minutes: 30
     strategy:
       fail-fast: false
