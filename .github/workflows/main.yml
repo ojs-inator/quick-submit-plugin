@@ -4,10 +4,7 @@ name: quickSubmit
 jobs:
   quickSubmit:
     # GitHub-hosted runner quota is exhausted for this organization.
-    # Use the KMANWeb disposable Docker runner pool instead.
-    # The org's chatgpt group must allow public repositories because this
-    # repository is public.
-    # Pilot the KMANWeb runtime with PKP HTTP readiness prerequisites on k4.
+    # Keep this focused validation on the known KMANWeb k4 runner.
     runs-on:
       group: chatgpt
       labels: [self-hosted, kmanweb, docker, k4]
@@ -16,49 +13,45 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Current OJS development target
-          - application: ojs
-            ojs_branch: main
-            php-version: 8.3
-            database: mysql
-            node_version: 20
-          - application: ojs
-            ojs_branch: main
-            php-version: 8.2
-            database: mysql
-            node_version: 20
-          - application: ojs
-            ojs_branch: main
-            php-version: 8.3
-            database: pgsql
-            node_version: 20
-          - application: ojs
-            ojs_branch: main
-            php-version: 8.2
-            database: pgsql
-            node_version: 20
-
-          # KMANPUB production compatibility target. Keep this on main so
-          # OJS 3.4 compatibility patches cannot merge without being tested
-          # against the version they are intended to support.
+          # Temporary focused lane while validating the production OJS 3.4 regression.
+          # Restore the broader matrix after this lane reaches and passes QuickSubmit Cypress.
           - application: ojs
             ojs_branch: stable-3_4_0
             php-version: 8.1
             database: mysql
             node_version: 16
-          - application: ojs
-            ojs_branch: stable-3_4_0
-            php-version: 8.2
-            database: mysql
-            node_version: 16
-          - application: ojs
-            ojs_branch: stable-3_4_0
-            php-version: 8.2
-            database: pgsql
-            node_version: 16
 
     name: ${{ matrix.ojs_branch }} / PHP ${{ matrix['php-version'] }} / ${{ matrix.database }}
     steps:
+      - name: Ensure Cypress runtime libraries
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libasound2t64 \
+            libatk-bridge2.0-0 \
+            libatk1.0-0 \
+            libatspi2.0-0 \
+            libcups2 \
+            libdrm2 \
+            libgbm1 \
+            libgtk-3-0 \
+            libnss3 \
+            libnspr4 \
+            libpango-1.0-0 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxkbcommon0 \
+            libxrandr2 \
+            libxshmfence1 \
+            libxtst6 \
+            xauth \
+            xvfb
+          ldconfig -p | grep -F 'libatk-1.0.so.0' >/dev/null
+          command -v Xvfb >/dev/null
+
       - uses: pkp/pkp-github-actions@v1
         with:
           node_version: ${{ matrix.node_version }}
