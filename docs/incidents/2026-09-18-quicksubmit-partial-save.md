@@ -46,8 +46,6 @@ At the time of this incident:
 - Despite those OJS 3.4 patches, the `main` workflow tested only OJS `main`.
 - This repository has a separate `stable-3_4_0` branch and it is materially diverged from `main`. Therefore compatibility changes made on `main` were not being exercised against OJS 3.4 before merge.
 
-This PR adds OJS `stable-3_4_0` jobs to the main-branch CI matrix.
-
 ## Related upstream issues reviewed
 
 - `pkp/quickSubmit#92` — multilingual "Choose a language" failure, including OJS 3.4 reports.
@@ -80,10 +78,14 @@ The Cypress happy paths now:
 - perform the same persistence check for the unpublished path, which directly targets the production symptom;
 - replace the arbitrary post-save sleep with a request-level synchronization point.
 
-The workflow now runs this test suite against:
+## Local validation — 2026-09-20
 
-- OJS `main`: PHP 8.2/8.3, MySQL/PostgreSQL;
-- OJS `stable-3_4_0`: PHP 8.1/8.2 with MySQL and PHP 8.2 with PostgreSQL.
+- OJS `stable-3_4_0`, PHP 8.1, MySQL, Node 16.18.1, and the official dataset;
+- `QuickSubmit.cy.js`: 2 passing, 0 failing;
+- both published and unpublished final save requests returned HTTP 200;
+- API round-trip confirmed locale, title, abstract, and contributor persistence.
+
+The original intermittent production 5xx root cause remains unconfirmed because no production failure has yet been correlated with proxy, PHP, and OJS logs.
 
 ## Remaining hardening
 

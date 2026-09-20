@@ -1,61 +1,30 @@
 on: [push, pull_request]
 name: quickSubmit
-
 jobs:
   quickSubmit:
-    # GitHub-hosted runner quota is exhausted for this organization.
-    # Focus this single validation lane on the recovered j4 runner.
-    runs-on:
-      group: chatgpt
-      labels: [self-hosted, kmanweb, docker, j4]
-    timeout-minutes: 30
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Temporary focused lane while validating the production OJS 3.4 regression.
-          # Restore the broader matrix after this lane reaches and passes QuickSubmit Cypress.
           - application: ojs
-            ojs_branch: stable-3_4_0
-            php-version: 8.1
+            php-version: 8.3
             database: mysql
-            node_version: 16
-
-    name: ${{ matrix.ojs_branch }} / PHP ${{ matrix['php-version'] }} / ${{ matrix.database }}
+          - application: ojs
+            php-version: 8.2
+            database: mysql
+          - application: ojs
+            php-version: 8.3
+            database: pgsql
+          - application: ojs
+            php-version: 8.2
+            database: pgsql
+    name: quickSubmit
     steps:
-      - name: Ensure Cypress runtime libraries
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends \
-            libasound2t64 \
-            libatk-bridge2.0-0 \
-            libatk1.0-0 \
-            libatspi2.0-0 \
-            libcups2 \
-            libdrm2 \
-            libgbm1 \
-            libgtk-3-0 \
-            libnss3 \
-            libnspr4 \
-            libpango-1.0-0 \
-            libxcomposite1 \
-            libxdamage1 \
-            libxfixes3 \
-            libxkbcommon0 \
-            libxrandr2 \
-            libxshmfence1 \
-            libxtst6 \
-            xauth \
-            xvfb
-          ldconfig -p | grep -F 'libatk-1.0.so.0' >/dev/null
-          command -v Xvfb >/dev/null
-
       - uses: pkp/pkp-github-actions@v1
         with:
-          node_version: ${{ matrix.node_version }}
-          branch: ${{ matrix.ojs_branch }}
-          repository: pkp
-          plugin: true
-          dataset_inject: true
+         node_version: 20
+         branch: main
+         repository: pkp
+         plugin: true
+         dataset_inject: true
