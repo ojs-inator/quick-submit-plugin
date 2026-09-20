@@ -23,6 +23,7 @@ use APP\publication\Publication;
 use APP\submission\Submission;
 use APP\template\TemplateManager;
 use Exception;
+use PKP\components\listPanels\ContributorsListPanel;
 use PKP\config\Config;
 use PKP\context\Context;
 use PKP\core\Core;
@@ -247,7 +248,55 @@ class QuickSubmitForm extends Form
             'primaryLocale' => $this->_submission->getData('locale'),
         ]);
 
+        // OJS 3.5+ replaced the legacy author grid with a Vue contributors panel.
+        // Keep the legacy grid on OJS 3.4, where Repo::userGroup()->getCollector() still exists.
+        $useContributorsListPanel = !method_exists(Repo::userGroup(), 'getCollector')
+            && class_exists(ContributorsListPanel::class);
+        $templateMgr->assign('useContributorsListPanel', $useContributorsListPanel);
+        if ($useContributorsListPanel) {
+            $this->setContributorsListPanelState($templateMgr);
+        }
+
         parent::display($request, $template);
+    }
+
+    /**
+     * Set the current-OJS ContributorsListPanel state.
+     */
+    protected function setContributorsListPanelState(TemplateManager $templateMgr): void
+    {
+        $submission = $this->_submission;
+        $context = $this->_context;
+        $publication = $submission->getCurrentPublication();
+
+        $locales = collect($context->getSupportedSubmissionMetadataLocaleNames() + $submission->getPublicationLanguageNames())
+            ->map(fn (string $name, string $locale) => ['key' => $locale, 'label' => $name])
+            ->sortBy('key')
+            ->values()
+            ->toArray();
+
+        $authorItems = [];
+        foreach ($publication->getData('authors') as $contributor) {
+            $authorItems[] = Repo::author()->getSchemaMap($submission)->map($contributor);
+        }
+
+        $contributorsListPanel = new ContributorsListPanel(
+            'quickSubmitContributors',
+            __('publication.contributors'),
+            $submission,
+            $context,
+            $locales,
+            $authorItems,
+            true
+        );
+
+        $genreDao = DAORegistry::getDAO('GenreDAO');
+        $contextGenres = $genreDao->getEnabledByContextId($context->getId())->toArray();
+
+        $templateMgr->setState([
+            'quickSubmitContributorsListPanel' => $contributorsListPanel->getConfig(),
+            'quickSubmitPublication' => Repo::publication()->getSchemaMap($submission, $contextGenres)->map($publication),
+        ]);
     }
 
     /**
