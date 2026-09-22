@@ -519,11 +519,13 @@ class QuickSubmitForm extends Form
         $this->_submission->setData('dateSubmitted', Core::getCurrentDate());
         $this->_submission->setData('submissionProgress', '');
 
-        parent::execute($this->_submission, ...$functionParams);
-
         Repo::submission()->edit($this->_submission, []);
         $this->_submission = Repo::submission()->get($this->_submission->getId());
-        $publication = $this->_submission->getCurrentPublication();
+        $publication = Repo::publication()->get($this->_submission->getData('currentPublicationId'));
+
+        // Form execute hooks may access the current publication through the
+        // submission, so dispatch them only after reloading saved metadata.
+        parent::execute($this->_submission, ...$functionParams);
 
         if ($publication->getData('sectionId') !== (int) $this->getData('sectionId')) {
             $publication = Repo::publication()
