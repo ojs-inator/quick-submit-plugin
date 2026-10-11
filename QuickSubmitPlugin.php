@@ -15,11 +15,13 @@
 namespace APP\plugins\importexport\quickSubmit;
 
 use APP\notification\NotificationManager;
+// OJS 3.4 and 3.5 expose this application class. Its parent is
+// PKP\notification\PKPNotification in 3.4 and PKP\notification\Notification in 3.5.
+use APP\notification\Notification;
 use APP\template\TemplateManager;
 use Exception;
 use PKP\plugins\ImportExportPlugin;
 use PKP\core\JSONMessage;
-use PKP\notification\Notification;
 
 class QuickSubmitPlugin extends ImportExportPlugin
 {

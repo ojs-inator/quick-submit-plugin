@@ -9,7 +9,12 @@
 [![Contributors](https://img.shields.io/github/contributors-anon/pkp/quickSubmit)](https://github.com/pkp/quickSubmit/graphs/contributors)
 
 ### Compatibility
-OJS 3.5
+OJS 3.4 and 3.5.
+
+Notifications use `APP\notification\Notification` on both versions. In OJS 3.4
+this class extends `PKP\notification\PKPNotification`; in OJS 3.5 it extends
+`PKP\notification\Notification`. Using the application class avoids a missing-class
+error when cancelling a QuickSubmit submission on OJS 3.4.
 
 | main | 3.5.0 | 3.4.0 | 3.3.0 |
 | ---- | ----- | ----- | ----- |
